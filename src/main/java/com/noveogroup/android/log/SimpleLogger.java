@@ -45,6 +45,7 @@ public class SimpleLogger extends AbstractLogger {
 
     private final String tag;
     private final Level level;
+    private final boolean checkIsLoggable;
 
     /**
      * Creates new {@link SimpleLogger} instance.
@@ -55,6 +56,13 @@ public class SimpleLogger extends AbstractLogger {
     public SimpleLogger(String tag, Level level) {
         this.tag = tag;
         this.level = level;
+        checkIsLoggable = true;
+    }
+
+    public SimpleLogger(String tag, Level level, boolean checkIsLoggable) {
+        this.tag = tag;
+        this.level = level;
+        this.checkIsLoggable = checkIsLoggable;
     }
 
     /**
@@ -78,7 +86,7 @@ public class SimpleLogger extends AbstractLogger {
     @Override
     public boolean isEnabled(Level level) {
         return this.level != null && this.level.includes(level)
-                && level != null && Log.isLoggable(tag, level.intValue());
+                && level != null && (!checkIsLoggable || Log.isLoggable(tag, level.intValue()));
     }
 
     @Override

@@ -66,9 +66,12 @@ public final class LoggerManager {
     private static final String PROPERTIES_NAME = "android-logger.properties";
     private static final String CONF_ROOT = "root";
     private static final String CONF_LOGGER = "logger.";
+    private static final String CONF_LOGCAT = "check-logcat-filter";
     private static final Pattern CONF_LOGGER_REGEX = Pattern.compile("(.*?):(.*)");
     private static final Logger.Level CONF_DEFAULT_LEVEL = Logger.Level.VERBOSE;
     private static final Map<String, Logger> loggerMap;
+
+    private static boolean checkIsLoggable = true;
 
     private static void loadProperties(Properties properties) throws IOException {
         InputStream inputStream = null;
@@ -95,14 +98,14 @@ public final class LoggerManager {
             String levelString = matcher.group(1);
             String tag = matcher.group(2);
             try {
-                return new SimpleLogger(tag, Logger.Level.valueOf(levelString));
+                return new SimpleLogger(tag, Logger.Level.valueOf(levelString), checkIsLoggable);
             } catch (IllegalArgumentException e) {
                 DEFAULT_LOGGER.w(String.format("Cannot parse %s as logging level. Only %s are allowed",
                         levelString, Arrays.toString(Logger.Level.values())));
-                return new SimpleLogger(loggerString, CONF_DEFAULT_LEVEL);
+                return new SimpleLogger(loggerString, CONF_DEFAULT_LEVEL, checkIsLoggable);
             }
         } else {
-            return new SimpleLogger(loggerString, CONF_DEFAULT_LEVEL);
+            return new SimpleLogger(loggerString, CONF_DEFAULT_LEVEL, checkIsLoggable);
         }
     }
 
@@ -122,6 +125,11 @@ public final class LoggerManager {
             DEFAULT_LOGGER.e("Logger configuration file is empty. Default configuration will be used");
             loggerMap.put(null, DEFAULT_LOGGER);
             return loggerMap;
+        }
+
+        // load configuration properties first, they needed to configure loggers
+        if (properties.getProperty(CONF_LOGCAT) != null) {
+            checkIsLoggable = Boolean.valueOf(properties.getProperty(CONF_LOGCAT));
         }
 
         for (String propertyName : properties.stringPropertyNames()) {
@@ -155,7 +163,7 @@ public final class LoggerManager {
             }
         }
         Logger logger = loggerMap.get(currentKey);
-        return logger != null ? logger : new SimpleLogger("", Logger.Level.VERBOSE);
+        return logger != null ? logger : new SimpleLogger("", Logger.Level.VERBOSE, checkIsLoggable);
     }
 
     /**
